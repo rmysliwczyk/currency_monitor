@@ -8,12 +8,12 @@ import re
 
 available_currency_codes = [
         "USD", "AUD", "CAD", "EUR", "HUF", "CHF", "GBP",
-        "JPY", "CZK", "DKK", "NOK", "SEK", "XDR"
+        "JPY", "CZK", "DKK", "NOK", "SEK"
         ]
 
 class GUI(tk.Frame):
     def __init__(self, master=None):
-        super().__init__(master, width=640, height=480, padx=20, pady=20, relief="raised", border=5)
+        super().__init__(master, width=640, height=480, padx=10, pady=10, relief="raised", border=5)
         self.grid(sticky=tk.N + tk.S + tk.E + tk.W)
         self.grid_propagate(0) 
 
@@ -31,11 +31,14 @@ class GUI(tk.Frame):
 
     def create_widgets(self):
         self.currency_display = tk.Text(self)
-        self.currency_display.grid(column=0, row=0, columnspan=3, sticky=tk.E + tk.W)
+        self.currency_display.grid(column=0, row=0, columnspan=3, sticky=tk.E + tk.W, pady=10)
 
         self.checkbuttons = []
+
+        tk.Label(self, text="Select which currencies value to check:").grid(column=0,row=1, sticky=tk.W)
+
         self.checkout_frame = tk.Frame(self, relief="sunken", border=5)
-        self.checkout_frame.grid(column=0, row=1, columnspan=3, rowspan=2, sticky=tk.W + tk.E)
+        self.checkout_frame.grid(column=0, row=2, columnspan=3, rowspan=2, sticky=tk.W + tk.E, pady=10)
         for i, code in enumerate(available_currency_codes):
             self.checkbuttons.append(tk.StringVar())
             tk.Checkbutton(
@@ -44,10 +47,10 @@ class GUI(tk.Frame):
                     offvalue=""
                     ).grid(column=i if i < 8 else i-8, row= 0 if i < 8 else 1)
         
-        self.update_button = tk.Button(self, text="Update currency info", command=self.parse_and_display_currency)
+        self.update_button = tk.Button(self, text="Update currency info", bg="#99ff99", command=self.parse_and_display_currency)
         self.update_button.grid(column=1, row=4)
 
-        tk.Button(self, text="Quit", command=self.quit).grid(column=2, row=4)
+        tk.Button(self, text="Quit", bg="#ff9980", command=self.quit).grid(column=2, row=4)
 
 
     def parse_and_display_currency(self):
@@ -64,14 +67,15 @@ class GUI(tk.Frame):
                 tkinter.messagebox.showwarning(type(e).__name__, e.__str__())
             displayed_text = ""
             for entry in currency_info:
-                displayed_text += f"WALUTA:{entry.code} | ZAKUP: {entry.bid} PLN | SPRZEDAŻ: {entry.ask} PLN\n"
+                displayed_text += f"{entry.code} | Bid: {entry.bid} PLN | Ask: {entry.ask} PLN\n"
             self.currency_display.delete("1.0", tk.END)
             self.currency_display.insert("1.0",displayed_text)
         else:
-            tkinter.messagebox.showwarning("Value Error", "Invalid currency code format")
+            tkinter.messagebox.showwarning("Value Error", "Select one of the options for currency")
 
 class CurrencyInfo:
-    def __init__(self, code, bid, ask):
+    def __init__(self, name, code, bid, ask):
+        self.name = name.strip().capitalize()
         self.code = code.upper().strip()
         self.bid = bid
         self.ask = ask
@@ -136,7 +140,7 @@ def get_currency_info(*currency_codes):
         if request.status_code == 404:
             raise ValueError("API:404 Service unreachable or unrecognized currency code provided")
     return [
-            CurrencyInfo(request.json()["code"], request.json()["rates"][0]["bid"], request.json()["rates"][0]["ask"]) for
+            CurrencyInfo(request.json()["currency"], request.json()["code"], request.json()["rates"][0]["bid"], request.json()["rates"][0]["ask"]) for
             request in
             request_list
         ]
