@@ -30,15 +30,19 @@ class GUI(tk.Frame):
         self.mainloop()
 
     def create_widgets(self):
-        self.currency_display = tk.Text(self)
-        self.currency_display.grid(column=0, row=0, columnspan=3, sticky=tk.E + tk.W, pady=10)
+        self.mb = tk.Menubutton(self, text="About")
+        self.mb.grid(column=0, row=0, sticky=tk.W)
+
+        self.currency_display = tk.Listbox(self, height=12, width=37)
+        self.currency_display.grid(column=0, row=1, columnspan=2, sticky=tk.W, pady=10)
+        tk.Label(self,text="->").grid(column=1, row=1, sticky=tk.N + tk.S + tk.E)
+        self.converted_display = tk.Listbox(self, height=12, width=15)
+        self.converted_display.grid(column=2, row=1, sticky=tk.E, pady=10)
 
         self.checkbuttons = []
 
-        tk.Label(self, text="Select which currencies value to check:").grid(column=0,row=1, sticky=tk.W)
-
         self.checkout_frame = tk.Frame(self, relief="sunken", border=5)
-        self.checkout_frame.grid(column=0, row=2, columnspan=3, rowspan=2, sticky=tk.W + tk.E, pady=10)
+        self.checkout_frame.grid(column=0, row=3, columnspan=3, rowspan=2, sticky=tk.W + tk.E, pady=10)
         for i, code in enumerate(available_currency_codes):
             self.checkbuttons.append(tk.StringVar())
             tk.Checkbutton(
@@ -47,29 +51,41 @@ class GUI(tk.Frame):
                     offvalue=""
                     ).grid(column=i if i < 8 else i-8, row= 0 if i < 8 else 1)
         
-        self.update_button = tk.Button(self, text="Update currency info", bg="#99ff99", command=self.parse_and_display_currency)
-        self.update_button.grid(column=1, row=4)
+        self.convert_button = tk.Button(self, text="Convert", command=self.convert)
+        self.convert_button.grid(column=2, row=2, sticky=tk.W, padx=10)
+        self.entered_amount = tk.DoubleVar()
+        self.amount = tk.Entry(self, textvariable=self.entered_amount)
+        self.amount.grid(column=1, row=2, sticky=tk.E)
+        self.update_button = tk.Button(self, text="Display currency info", bg="#99ff99", command=self.parse_and_display_currency)
+        self.update_button.grid(column=0, row=2, sticky=tk.W)
 
-        tk.Button(self, text="Quit", bg="#ff9980", command=self.quit).grid(column=2, row=4)
+        tk.Button(self, text="Quit", bg="#ff9980", command=self.quit).grid(column=2, row=5, sticky=tk.E)
+
+    def convert(self):
+        self.parse_and_display_currency()
+        for item in self.currency_info:
+            self.converted_display.insert(tk.END,
+            f"{convert_to(self.entered_amount.get(), item.bid):.2f} | {convert_from(self.entered_amount.get(), item.ask):.2f}"
+            )       
 
 
     def parse_and_display_currency(self):
+        self.converted_display.delete(0, tk.END)
+        self.currency_display.delete(0, tk.END)
         parsed_currency_codes = ""
         for checkbutton in self.checkbuttons:
             parsed_currency_codes += checkbutton.get()
         parsed_currency_codes = get_currency_codes_from_str(parsed_currency_codes)
 
-        currency_info = []
+        self.currency_info = []
         if parsed_currency_codes:
             try:
-                currency_info = get_currency_info(*parsed_currency_codes)
+                self.currency_info = get_currency_info(*parsed_currency_codes)
             except ValueError as e:
                 tkinter.messagebox.showwarning(type(e).__name__, e.__str__())
-            displayed_text = ""
-            for entry in currency_info:
-                displayed_text += f"{entry.code} | Bid: {entry.bid} PLN | Ask: {entry.ask} PLN\n"
-            self.currency_display.delete("1.0", tk.END)
-            self.currency_display.insert("1.0",displayed_text)
+
+            for entry in self.currency_info:
+                self.currency_display.insert(tk.END, f"{entry.code} | Bid: {entry.bid} PLN | Ask: {entry.ask} PLN")
         else:
             tkinter.messagebox.showwarning("Value Error", "Select one of the options for currency")
 
@@ -147,11 +163,11 @@ def get_currency_info(*currency_codes):
 
 
 def convert_to(amount, bid):
-    return bid / amount
+    return amount * bid
 
 
 def convert_from(amount, ask):
-    return ask / amount
+    return amount * ask
     
 
 def show_as_table_in_cli(*currency_info):
