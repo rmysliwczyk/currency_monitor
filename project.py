@@ -13,13 +13,20 @@ available_currency_codes = [
 
 class GUI(tk.Frame):
     def __init__(self, master=None):
-        super().__init__(master, width=640, height=480, padx=10, pady=10, relief="raised", border=5)
+        super().__init__(master, padx=10, pady=10, relief="raised", border=5)
         self.grid(sticky=tk.N + tk.S + tk.E + tk.W)
         self.grid_propagate(0) 
 
         top=self.winfo_toplevel()
         top.title("Currency Monitor")
         top.bind("<Return>", lambda _: self.parse_and_display_currency())
+        top.tk.call("tk", "scaling", top.tk.call("tk", "scaling"))
+
+        self.display_scaling = top.tk.call("tk", "scaling")
+
+        width = round(640 * self.display_scaling)
+        height = round(480 * self.display_scaling)
+        top.geometry(f"{width}x{height}")
 
         top.columnconfigure(0, weight=1)
         top.rowconfigure(0, weight=1)
@@ -27,16 +34,19 @@ class GUI(tk.Frame):
         self.rowconfigure(0, weight=1)
 
         self.create_widgets()
+
+        self.height=self.winfo_reqheight()
+        self.width=self.winfo_reqwidth()
         self.mainloop()
 
     def create_widgets(self):
         self.mb = tk.Menubutton(self, text="About")
         self.mb.grid(column=0, row=0, sticky=tk.W)
 
-        self.currency_display = tk.Listbox(self, height=12, width=37)
+        self.currency_display = tk.Listbox(self, height=12, width=round(37*self.display_scaling))
         self.currency_display.grid(column=0, row=1, columnspan=2, sticky=tk.W, pady=10)
         tk.Label(self,text="->").grid(column=1, row=1, sticky=tk.N + tk.S + tk.E)
-        self.converted_display = tk.Listbox(self, height=12, width=15)
+        self.converted_display = tk.Listbox(self, height=12, width=round(15*self.display_scaling))
         self.converted_display.grid(column=2, row=1, sticky=tk.E, pady=10)
 
         self.checkbuttons = []
@@ -65,7 +75,7 @@ class GUI(tk.Frame):
         self.parse_and_display_currency()
         for item in self.currency_info:
             self.converted_display.insert(tk.END,
-            f"{convert_to(self.entered_amount.get(), item.bid):.2f} | {convert_from(self.entered_amount.get(), item.ask):.2f}"
+            f"{item.code}:{convert_to(self.entered_amount.get(), item.bid):.2f}  PLN:{convert_from(self.entered_amount.get(), item.ask):.2f}"
             )       
 
 
@@ -163,12 +173,11 @@ def get_currency_info(*currency_codes):
 
 
 def convert_to(amount, bid):
-    return amount * bid
+    return amount/bid
 
 
 def convert_from(amount, ask):
-    return amount * ask
-    
+    return amount*ask
 
 def show_as_table_in_cli(*currency_info):
     currency_info_list = [ 
