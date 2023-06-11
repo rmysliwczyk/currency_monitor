@@ -13,7 +13,7 @@ available_currency_codes = [
 
 class GUI(tk.Frame):
     def __init__(self, master=None):
-        super().__init__(master, padx=10, pady=10, relief="raised", border=5)
+        super().__init__(master, padx=10, pady=10, relief="flat")
         self.grid(sticky=tk.N + tk.S + tk.E + tk.W)
         self.grid_propagate(0) 
 
@@ -25,7 +25,7 @@ class GUI(tk.Frame):
         self.display_scaling = top.tk.call("tk", "scaling")
 
         width = round(640 * self.display_scaling)
-        height = round(480 * self.display_scaling)
+        height = round(460 * self.display_scaling)
         top.geometry(f"{width}x{height}")
 
         top.columnconfigure(0, weight=1)
@@ -40,8 +40,24 @@ class GUI(tk.Frame):
         self.mainloop()
 
     def create_widgets(self):
-        self.mb = tk.Menubutton(self, text="About")
-        self.mb.grid(column=0, row=0, sticky=tk.W)
+        self.menu_frame = tk.Frame(self, relief="flat")
+        self.menu_frame.grid(column=0, row=0, sticky=tk.W+tk.N)
+
+        self.mb = {}
+        self.mb["options"] = tk.Menubutton(self.menu_frame, text="Options")
+        self.mb["help"] = tk.Menubutton(self.menu_frame, text="Help")
+
+        for i, (k, v) in enumerate(self.mb.items()):
+            v.grid(column=i, row=0, sticky=tk.W)
+
+        for k, v in self.mb.items():
+            v.menu = tk.Menu(v, tearoff=0)
+            v["menu"] = v.menu
+            if k == "options":
+                v.menu.add_separator()
+            elif k == "help":
+                v.menu.add_command(label="About", command=self.about)
+
 
         self.currency_display = tk.Listbox(self, height=12, width=round(37*self.display_scaling))
         self.currency_display.grid(column=0, row=1, columnspan=2, sticky=tk.W, pady=10)
@@ -78,7 +94,6 @@ class GUI(tk.Frame):
             f"{item.code}:{convert_to(self.entered_amount.get(), item.bid):.2f}  PLN:{convert_from(self.entered_amount.get(), item.ask):.2f}"
             )       
 
-
     def parse_and_display_currency(self):
         self.converted_display.delete(0, tk.END)
         self.currency_display.delete(0, tk.END)
@@ -98,6 +113,9 @@ class GUI(tk.Frame):
                 self.currency_display.insert(tk.END, f"{entry.code} | Bid: {entry.bid} PLN | Ask: {entry.ask} PLN")
         else:
             tkinter.messagebox.showwarning("Value Error", "Select one of the options for currency")
+
+    def about(self):
+        tkinter.messagebox.showinfo("About", "HELLO WORLD")
 
 class CurrencyInfo:
     def __init__(self, name, code, bid, ask):
