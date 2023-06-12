@@ -6,6 +6,7 @@ import requests
 import sys
 import re
 
+
 available_currency_codes = [
         "USD", "AUD", "CAD", "EUR", "HUF", "CHF", "GBP",
         "JPY", "CZK", "DKK", "NOK", "SEK"
@@ -44,7 +45,6 @@ class GUI(tk.Frame):
         self.menu_frame.grid(column=0, row=0, sticky=tk.W+tk.N)
 
         self.mb = {}
-        self.mb["options"] = tk.Menubutton(self.menu_frame, text="Options")
         self.mb["help"] = tk.Menubutton(self.menu_frame, text="Help")
 
         for i, (k, v) in enumerate(self.mb.items()):
@@ -53,9 +53,7 @@ class GUI(tk.Frame):
         for k, v in self.mb.items():
             v.menu = tk.Menu(v, tearoff=0)
             v["menu"] = v.menu
-            if k == "options":
-                v.menu.add_separator()
-            elif k == "help":
+            if k == "help":
                 v.menu.add_command(label="About", command=self.about)
 
 
@@ -115,7 +113,7 @@ class GUI(tk.Frame):
             tkinter.messagebox.showwarning("Value Error", "Select one of the options for currency")
 
     def about(self):
-        tkinter.messagebox.showinfo("About", "HELLO WORLD")
+        tkinter.messagebox.showinfo("About", "Currency Monitor - Check the value of PLN compared to other currencies. This is a final project for CS50P. Author: Rafał Myśliwczyk")
 
 class CurrencyInfo:
     def __init__(self, name, code, bid, ask):
@@ -152,17 +150,52 @@ def main():
 
         while True:
             currency_info = []
+            do_conversion = False
             try:
-                currency = input("Nazwa waluty (ISO4217): ").lower()
-                currency_codes = re.findall("([a-z]{3}),?", currency)
+                currencies = input("Currency symbol (ISO4217): ").lower()
+                currency_codes = get_currency_codes_from_str(currencies)
                 currency_info = get_currency_info(*currency_codes)
-            
             except ValueError as e:
                 print(e.__str__())
             else:
-                break
+                if currency_info != []:
+                    break
+                else:
+                    print("Must provide at least one 3 letter currency code")
 
         show_as_table_in_cli(*currency_info)
+
+        while True:
+            try:
+                do_conversion = input("Do conversion? (y/n): ")
+            except ValueError:
+                pass
+            else:
+                if do_conversion.lower() == "y":
+                    do_conversion = True
+                    break
+                elif do_conversion.lower() == "n":
+                    do_conversion = False
+                    break
+
+        if do_conversion:
+            while True:
+                try:
+                    amount = float((input("Amount: ")))
+                    converted_amounts = []
+                    print("\nConverted amounts:")
+                    for currency in currency_info:
+                        converted_amounts.append(CurrencyInfo(
+                            "Converted amount",
+                            currency.code,
+                            round(convert_to(amount, currency.bid), 2),
+                            round(convert_from(amount, currency.ask), 2),
+                        ))
+                    show_as_table_in_cli(*converted_amounts)
+                except ValueError:
+                    pass
+                else:
+                    break
 
     
 def get_currency_codes_from_str(text):
@@ -197,13 +230,14 @@ def convert_to(amount, bid):
 def convert_from(amount, ask):
     return amount*ask
 
+
 def show_as_table_in_cli(*currency_info):
     currency_info_list = [ 
-        {"Symbol":entry.code, "Zakup":f"{entry.bid}PLN", "Sprzedaż":f"{entry.ask}PLN"} for
+        {"Symbol":entry.code, "Bid":f"{entry.bid}PLN", "Ask":f"{entry.ask}PLN"} for
         entry in
         currency_info
         ]
-    print(tabulate(currency_info_list, headers="keys", tablefmt="rounded_grid"))
+    print(tabulate(currency_info_list, headers="keys", tablefmt="grid"))
 
 
 if __name__ == "__main__":
